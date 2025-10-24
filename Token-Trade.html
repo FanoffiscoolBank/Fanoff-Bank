@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Token Trade</title>
+  <style>
+    body { font-family: Arial; background: #111; color: #fff; text-align: center; margin-top: 40px; }
+    input, button { padding: 10px; margin: 5px; border: none; border-radius: 6px; }
+    button { background: #28a745; color: white; cursor: pointer; }
+    button:hover { background: #218838; }
+    #dashboard { display: none; }
+    #users { margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+  <h1>💰 Token Trade</h1>
+
+  <div id="login">
+    <input id="username" placeholder="Enter username">
+    <button onclick="login()">Enter</button>
+  </div>
+
+  <div id="dashboard">
+    <h2>Welcome, <span id="userDisplay"></span></h2>
+    <p>Balance: <span id="balance">0</span> tokens</p>
+
+    <input id="toUser" placeholder="Send to username">
+    <input id="amount" type="number" placeholder="Amount">
+    <button onclick="sendTokens()">Send</button><br>
+
+    <div id="adminSection" style="display:none;">
+      <h3>Admin Controls</h3>
+      <input id="mintTo" placeholder="Mint to username">
+      <input id="mintAmount" type="number" placeholder="Amount">
+      <button onclick="mintTokens()">Mint</button><br>
+      <input id="deleteUser" placeholder="Delete username">
+      <button onclick="deleteUser()">Delete User</button>
+    </div>
+
+    <h3>Users</h3>
+    <div id="users"></div>
+  </div>
+
+<script>
+const BIN_URL = "https://api.jsonbin.io/v3/b/68fb829243b1c97be97d5aa8"; // replace with your JSONBin URL
+const MASTER_KEY = "$2a$10$tlx1sUiImlzyunlq9uIjBuD.aJWLWZDqPtT5cRpmjOQETT4Mf0Dju"; // optional API key if you make the bin private
+
+let data = {};
+let currentUser = null;
+
+async function loadData() {
+  const res = await fetch(BIN_URL);
+  const json = await res.json();
+  data = json.record || json;
+}
+
+async function saveData() {
+  await fetch(BIN_URL, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY },
+    body: JSON.stringify(data)
+  });
+}
+
+async function login() {
+  await loadData();
+  const username = document.getElementById("username").value.trim();
+  if (!data.users[username]) {
+    data.users[username] = 0;
+    await saveData();
+  }
+  currentUser = username;
+  document.getElementById("userDisplay").innerText = username;
+  document.getElementById("login").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+  if (username === "Fanoffiscool") document.getElementById("adminSection").style.display = "block";
+  updateUI();
+}
+
+function updateUI() {
+  document.getElementById("balance").innerText = data.users[currentUser];
+  const usersDiv = document.getElementById("users");
+  usersDiv.innerHTML = "";
+  for (const [user, bal] of Object.entries(data.users)) {
+    usersDiv.innerHTML += `<p>${user}: ${bal} tokens</p>`;
+  }
+}
+
+async function sendTokens() {
+  const to = document.getElementById("toUser").value.trim();
+  const amount = parseInt(document.getElementById("amount").value);
+  if (!data.users[to]) return alert("User not found!");
+  if (data.users[currentUser] < amount) return alert("Not enough tokens!");
+  data.users[currentUser] -= amount;
+  data.users[to] += amount;
+  await saveData();
+  updateUI();
+}
+
+async function mintTokens() {
+  const to = document.getElementById("mintTo").value.trim();
+  const amount = parseInt(document.getElementById("mintAmount").value);
+  if (currentUser !== "Fanoffiscool") return alert("Not admin!");
+  if (!data.users[to]) data.users[to] = 0;
+  data.users[to] += amount;
+  await saveData();
+  updateUI();
+}
+
+async function deleteUser() {
+  const del = document.getElementById("deleteUser").value.trim();
+  if (currentUser !== "Fanoffiscool") return alert("Not admin!");
+  if (!data.users[del]) return alert("User not found!");
+  delete data.users[del];
+  await saveData();
+  updateUI();
+}
+</script>
+</body>
+</html>
