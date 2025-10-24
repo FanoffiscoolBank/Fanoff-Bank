@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Token Trade</title>
+  <style>
+    body { background:#111; color:#fff; font-family:Arial; text-align:center; margin-top:50px; }
+    input, button { padding:8px; margin:5px; border-radius:5px; border:none; }
+    button { background:#28a745; color:white; cursor:pointer; }
+    button:hover { background:#218838; }
+    #dashboard { display:none; }
+  </style>
+</head>
+<body>
+
+  <h1>💰 Token Trade</h1>
+  <div id="login">
+    <input id="username" placeholder="Enter your username">
+    <button onclick="login()">Enter</button>
+  </div>
+
+  <div id="dashboard">
+    <h2>Welcome, <span id="userDisplay"></span></h2>
+    <p>Balance: <span id="balance">0</span> tokens</p>
+
+    <h3>Send Tokens</h3>
+    <input id="toUser" placeholder="Recipient username">
+    <input id="amount" type="number" placeholder="Amount">
+    <button onclick="sendTokens()">Send</button>
+
+    <div id="mintSection" style="display:none;">
+      <h3>Mint Tokens (Admin Only)</h3>
+      <input id="mintTo" placeholder="Recipient username">
+      <input id="mintAmount" type="number" placeholder="Amount">
+      <button onclick="mintTokens()">Mint</button>
+    </div>
+
+    <h3>All Users</h3>
+    <pre id="users"></pre>
+  </div>
+
+  <script>
+    let data = JSON.parse(localStorage.getItem('tokenData') || '{"users":{}}');
+    let currentUser = '';
+
+    function save() {
+      localStorage.setItem('tokenData', JSON.stringify(data));
+    }
+
+    function login() {
+      const user = document.getElementById('username').value.trim();
+      if(!user) return alert('Enter username');
+      currentUser = user;
+      if(!data.users[user]) data.users[user] = 0;
+      save();
+      document.getElementById('userDisplay').textContent = user;
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('login').style.display = 'none';
+      if(user === 'Fanoffiscool') document.getElementById('mintSection').style.display = 'block';
+      update();
+    }
+
+    function update() {
+      document.getElementById('balance').textContent = data.users[currentUser];
+      document.getElementById('users').textContent = JSON.stringify(data.users, null, 2);
+    }
+
+    function sendTokens() {
+      const to = document.getElementById('toUser').value.trim();
+      const amt = Number(document.getElementById('amount').value);
+      if(!to || !amt) return alert('Fill all fields');
+      if(!data.users[to]) data.users[to] = 0;
+      if(data.users[currentUser] < amt) return alert('Not enough tokens');
+      data.users[currentUser] -= amt;
+      data.users[to] += amt;
+      save();
+      update();
+    }
+
+    function mintTokens() {
+      const to = document.getElementById('mintTo').value.trim();
+      const amt = Number(document.getElementById('mintAmount').value);
+      if(currentUser !== 'Fanoffiscool') return alert('Only Fanoffiscool can mint');
+      if(!to || !amt) return alert('Fill all fields');
+      if(!data.users[to]) data.users[to] = 0;
+      data.users[to] += amt;
+      save();
+      update();
+    }
+  </script>
+
+</body>
+</html>
